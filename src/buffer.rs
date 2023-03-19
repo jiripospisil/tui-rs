@@ -14,28 +14,33 @@ pub struct Cell {
     pub fg: Color,
     pub bg: Color,
     pub modifier: Modifier,
+    pub skip: bool,
 }
 
 impl Cell {
     pub fn set_symbol(&mut self, symbol: &str) -> &mut Cell {
         self.symbol.clear();
         self.symbol.push_str(symbol);
+        self.skip = false;
         self
     }
 
     pub fn set_char(&mut self, ch: char) -> &mut Cell {
         self.symbol.clear();
         self.symbol.push(ch);
+        self.skip = false;
         self
     }
 
     pub fn set_fg(&mut self, color: Color) -> &mut Cell {
         self.fg = color;
+        self.skip = false;
         self
     }
 
     pub fn set_bg(&mut self, color: Color) -> &mut Cell {
         self.bg = color;
+        self.skip = false;
         self
     }
 
@@ -48,6 +53,7 @@ impl Cell {
         }
         self.modifier.insert(style.add_modifier);
         self.modifier.remove(style.sub_modifier);
+        self.skip = false;
         self
     }
 
@@ -64,6 +70,12 @@ impl Cell {
         self.fg = Color::Reset;
         self.bg = Color::Reset;
         self.modifier = Modifier::empty();
+        self.skip = true;
+    }
+
+    pub fn set_skip(&mut self, skip: bool) -> &mut Cell {
+        self.skip = skip;
+        self
     }
 }
 
@@ -74,6 +86,7 @@ impl Default for Cell {
             fg: Color::Reset,
             bg: Color::Reset,
             modifier: Modifier::empty(),
+            skip: true,
         }
     }
 }
@@ -440,7 +453,7 @@ impl Buffer {
         // place (the skipped cells should be blank anyway):
         let mut to_skip: usize = 0;
         for (i, (current, previous)) in next_buffer.iter().zip(previous_buffer.iter()).enumerate() {
-            if (current != previous || invalidated > 0) && to_skip == 0 {
+            if (current != previous || invalidated > 0) && to_skip == 0 && !current.skip {
                 let x = i as u16 % width;
                 let y = i as u16 / width;
                 updates.push((x, y, &next_buffer[i]));
